@@ -1,17 +1,13 @@
 import sys
 from PySide6.QtWidgets import QApplication # type: ignore
-from classes import main_window, calc_field, grid_btn
+from classes import main_window
 
-btn_style = "background-color: blue; color: white; border: 1px solid white; border-radius: 5px;"
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    main = main_window()
 
-app = QApplication(sys.argv)
-main = main_window()
+    main.adjustSize()
+    main.setFixedSize(main.width(), main.height())
 
-main.adjustSize()
-main.setFixedSize(main.width(), main.height())
-
-teste = grid_btn()
-teste.btn_maker()
-
-main.show()
-app.exec()
+    main.show()
+    app.exec()
