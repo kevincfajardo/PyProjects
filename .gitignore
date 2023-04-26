@@ -1,1 +1,3 @@
+.gitignore
 Path.txt
+__pycache__\

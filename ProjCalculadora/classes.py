@@ -1,6 +1,7 @@
-from PySide6.QtCore import Qt # type: ignore
+from PySide6.QtCore import Qt, Signal  # type: ignore
+from PySide6.QtGui import QKeyEvent # type: ignore
 from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QPushButton, QLineEdit, QGridLayout, QLabel # type: ignore
-from func import decorator, insert_txt
+from func import decorator, calc_action
 
 main_style = "background-color: #140f07; color: #3dfff9;  border: 1px solid; border-radius: 5px;"
 
@@ -26,6 +27,7 @@ class main_window(QMainWindow):
         
 
 class oper_label(QLabel):
+
     def __init__(self, *args, **kwarg):
         super().__init__(*args, **kwarg)
 
@@ -35,6 +37,11 @@ class oper_label(QLabel):
 
 
 class calc_field(QLineEdit):
+    btn_enter = Signal()
+    btn_del = Signal()
+    btn_cl = Signal()
+    btn_op = Signal(str)
+    
     def __init__(self, *args, **kwarg):
         super().__init__(*args, **kwarg)
 
@@ -44,7 +51,30 @@ class calc_field(QLineEdit):
         self.setMinimumWidth(450)
         self.setTextMargins(10, 10, 10, 10)
 
-        self.cont_flag = True
+        self.cont_flag = True    
+    
+    def keyPressEvent(self, event: QKeyEvent):
+        key_txt = event.text()
+        key = event.key()
+        KEYS = Qt.Key
+
+        is_enter = key in [KEYS.Key_Enter, KEYS.Key_Return, KEYS.Key_Equal]
+        is_del = key in [KEYS.Key_Backspace, KEYS.Key_Delete]
+        is_cl = key in [KEYS.Key_Escape, KEYS.Key_C]
+
+        if is_enter:
+            self.btn_enter.emit()
+            return event.ignore()
+        
+        if is_del:
+            self.btn_del.emit()
+            return event.ignore()
+        
+        if is_cl:
+            self.btn_cl.emit()
+            return event.ignore()
+
+        self.btn_op.emit(key_txt)
 
 
 class grid_btn(QGridLayout):
@@ -53,14 +83,24 @@ class grid_btn(QGridLayout):
         self.btn_maker(field, oper)
 
     mask = [
-        ["Cl", "Del", "x²", "/"],
+        ["Cl", "Del", "^", "/"],
         [7, 8, 9, "x"],
         [4, 5, 6, "-"],
         [1, 2, 3, "+"],
         ["+/-", 0, ",", "E"]
     ]
-
+    
     def btn_maker(self, field, oper):
+        args = field, oper
+
+        def num_conn(value):
+            calc_action(*args, value)
+
+        field.btn_enter.connect(decorator(*args, "E"))
+        field.btn_del.connect(decorator(*args, "Del"))
+        field.btn_cl.connect(decorator(*args, "Cl"))
+        field.btn_op.connect(num_conn)
+
         for c, row in enumerate(self.mask):
             for i, col in enumerate(row):
                 btn_txt = f"{col}"
@@ -71,5 +111,5 @@ class grid_btn(QGridLayout):
                 else:
                     btn.setStyleSheet(main_style + "height: 65; border-color: #3dfff9; ")
                 
-                btn.clicked.connect(decorator(insert_txt, btn, field, oper))
+                btn.clicked.connect(decorator(*args, btn_txt))
                 self.addWidget(btn, c, i)

@@ -1,14 +1,17 @@
 from PySide6.QtCore import Slot # type: ignore
 
-def decorator(func, *args):
-    @Slot(bool)
+def decorator(*args, **kwargs):
+    @Slot()
     def slot():
-        func(*args)
+        calc_action(*args, **kwargs)
     return slot
 
-def insert_txt(btn, field, oper):
+@Slot()
+def calc_action(field, oper, value):
     global left_op
-    value = btn.text()
+
+    if value == "":
+        return
 
     if value in "0123456789":
         if not field.cont_flag:
@@ -16,44 +19,57 @@ def insert_txt(btn, field, oper):
 
         field.insert(value)
         field.cont_flag = True
+        return
 
-    if value == ',':
+    if value in ',.':
         if "." not in field.text():
             field.insert(".")  
+        return
     
-    if value in "+-x/":
+    if value in "+-x/^":
         if check_value(field.text(), field):
             field.insert(value)
             oper.setText(field.text())
-            left_op = field.text().replace("x", "*")
+            if value == "^":
+                left_op = field.text().replace("^", "**")
+            else:
+                left_op = field.text().replace("x", "*")
             field.setText("")
+        return
     
-    if value.lower() == "e":
+    if value == "E":
         try:
             if check_value(field.text(), field):
-                operation = left_op+field.text()
-                resul = eval(operation)
-                oper.setText(operation)
+                resul = eval(left_op+field.text())
+                oper.setText(oper.text() + field.text())
                 field.setText(str(resul))
                 field.cont_flag = False
+                left_op = ""
         except (SyntaxError, NameError):
             field.setText("Erro: operação incompleta")
             field.cont_flag = False
+            left_op = ""
+        return
 
     if value == "Del":
         field.backspace()
+        return
 
     if value == "Cl":
         field.setText("")
         left_op = ""
         field.cont_flag = True
+        oper.setText("")
+        return
     
     if value == "+/-":
         if check_value(field.text(), field):
             number = float(field.text()) * -1
             field.setText(str(number))
+        return
 
 
+@Slot()
 def check_value(value, field):
     try:
         float(value)
